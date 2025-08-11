@@ -1,10 +1,13 @@
 #!/bin/bash
 
+echo "==== 测速脚本 ===="
+
 # 检查 curl 是否安装
 if ! command -v curl >/dev/null 2>&1; then
-  echo "错误：系统未安装 curl，请先安装 curl 后再运行此脚本。"
+  echo "[错误] 系统未安装 curl，请先安装 curl 后再运行此脚本。"
   exit 1
 fi
+echo "[检测] curl 已安装，准备开始测速。"
 
 # 四个下载地址（自适应、联通、移动、电信）
 URLS=(
@@ -15,25 +18,29 @@ URLS=(
 )
 
 # 读取用户输入循环次数
-read -p "请输入循环次数（正整数）： " count
-
-# 校验输入是否为正整数
-if ! [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
-  echo "错误：请输入一个正整数"
-  exit 1
-fi
-
-echo "开始循环下载，每轮下载4个地址，共 $count 轮"
-
-for ((i=1; i<=count; i++)); do
-  echo "第 $i 轮开始..."
-
-  for url in "${URLS[@]}"; do
-    echo "下载地址：$url"
-    curl -L --progress-bar -o /dev/null "$url"
-  done
-
-  echo "第 $i 轮结束"
+while true; do
+  read -p "请输入测速循环次数（正整数，Ctrl+C退出）： " count
+  if [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+    echo "[输入确认] 循环次数设为：$count"
+    break
+  else
+    echo "[错误] 输入无效，请输入一个正整数。"
+  fi
 done
 
-echo "全部循环完成。"
+echo "开始执行测速，总共循环 $count 轮，每轮下载4个不同节点..."
+
+for ((i=1; i<=count; i++)); do
+  echo "============================"
+  echo "[第 $i 轮] 开始"
+  
+  for url in "${URLS[@]}"; do
+    echo "[下载] $url"
+    curl -L --progress-bar -o /dev/null "$url"
+  done
+  
+  echo "[第 $i 轮] 完成"
+done
+
+echo "============================"
+echo "测速完成！共执行了 $count 轮。感谢使用！"
