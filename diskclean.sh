@@ -44,10 +44,12 @@ fi
 # 删除未使用的旧内核（APT/DNF）
 echo "正在删除未使用的旧内核..."
 if [[ "$PKG_MANAGER" == "apt" || "$PKG_MANAGER" == "dnf" ]]; then
-    current_kernel=$(uname -r | sed 's/-*[a-z]*//g')
+    current_kernel=$(uname -r)
     if [[ "$PKG_MANAGER" == "apt" ]]; then
         kernel_packages=$(dpkg --list | grep -E '^ii  linux-(image|headers)-[0-9]+' \
-            | awk '{print $2}' | grep -v "$current_kernel")
+            | awk '{print $2}' \
+            | grep -v "^linux-image-cloud-amd64$" \
+            | grep -v "^$current_kernel$")
     else
         kernel_packages=$(rpm -q kernel | grep -v "$current_kernel")
     fi
