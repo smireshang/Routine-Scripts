@@ -38,7 +38,7 @@ esac
 
 # Step 1: 执行前总结
 echo
-echo "=== 执行前总结信息 ==="
+echo "=== 风险提示 ==="
 echo "当前用户: $SSH_USER"
 echo "authorized_keys 文件: $AUTHORIZED_KEYS_PATH"
 echo "sshd 配置文件: $SSHD_CONFIG"
@@ -49,7 +49,7 @@ echo " 1. 下载远程公钥"
 echo " 2. 创建或备份 authorized_keys 文件（如果不存在）"
 echo " 3. 检查并添加公钥到 authorized_keys"
 echo " 4. 用户必须确认可以使用密钥登录"
-echo " 5. 修改 SSH 配置，仅允许密钥登录"
+echo " 5. 修改 SSH 配置，选择认证方式（密码+密钥或仅密钥）"
 echo "警告：如果未能成功验证密钥登录，请不要禁用密码登录，否则可能无法远程访问服务器"
 echo "========================"
 printf "确认继续执行吗？(y/n): "
@@ -103,23 +103,38 @@ fi
 
 # Step 6: 提示用户验证密钥登录
 echo
-echo "请确保你可以使用密钥登录服务器后，再执行下一步禁用密码登录。"
+echo "请确保你可以使用密钥登录服务器后，再执行下一步修改 SSH 配置。"
 printf "确认已测试密钥登录成功？(y/n): "
 read confirm
 [ "$confirm" != "y" ] && echo "请先验证密钥登录，脚本终止。" && exit 0
 
-# Step 7: 修改 SSH 配置，仅允许密钥登录
+# Step 7: 修改 SSH 配置，选择认证方式
+echo
+echo "请选择 SSH 登录认证方式："
+echo "1) 支持密码登录 + 支持密钥登录（默认）"
+echo "2) 仅支持密钥登录（禁用密码）"
+printf "输入选项 [1/2]: "
+read ssh_choice
+
+# 备份 sshd_config
 cp "$SSHD_CONFIG" "$BACKUP_SSHD_CONFIG"
-echo "备份 SSH 配置到 $BACKUP_SSHD_CONFIG"
-printf "是否禁用密码登录，仅允许密钥登录？(y/n): "
-read confirm
-if [ "$confirm" = "y" ]; then
-    sed -i 's/^#*\s*PasswordAuthentication\s.*/PasswordAuthentication no/' "$SSHD_CONFIG"
-    sed -i 's/^#*\s*PubkeyAuthentication\s.*/PubkeyAuthentication yes/' "$SSHD_CONFIG"
-    echo "SSH 配置已修改"
-else
-    echo "跳过修改 SSH 配置"
-fi
+echo "已备份 SSH 配置到 $BACKUP_SSHD_CONFIG"
+
+case "$ssh_choice" in
+    1)
+        sed -i 's/^#*\s*PasswordAuthentication\s.*/PasswordAuthentication yes/' "$SSHD_CONFIG"
+        sed -i 's/^#*\s*PubkeyAuthentication\s.*/PubkeyAuthentication yes/' "$SSHD_CONFIG"
+        echo "SSH 配置修改为：密码 + 密钥登录"
+        ;;
+    2)
+        sed -i 's/^#*\s*PasswordAuthentication\s.*/PasswordAuthentication no/' "$SSHD_CONFIG"
+        sed -i 's/^#*\s*PubkeyAuthentication\s.*/PubkeyAuthentication yes/' "$SSHD_CONFIG"
+        echo "SSH 配置修改为：仅密钥登录"
+        ;;
+    *)
+        echo "无效选项，跳过修改 SSH 配置"
+        ;;
+esac
 
 # Step 8: 重启 SSH 服务
 echo "重启 SSH 服务..."
