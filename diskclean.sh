@@ -12,13 +12,13 @@ start_space=$(df / | tail -n 1 | awk '{print $3}')
 if command -v apt-get > /dev/null; then
     PKG_MANAGER="apt"
     CLEAN_CMD="apt-get autoremove -y && apt-get clean && apt-get autoclean -y"
-    PKG_UPDATE_CMD="apt-get update"
+    PKG_UPDATE_CMD="timeout 120 apt-get update -o Acquire::Retries=1 -o Acquire::http::Timeout=10"
     INSTALL_CMD="apt-get install -y"
-    PURGE_CMD="apt-get purge -y"
+    PURGE_CMD="apt-get purge -y -o Dpkg::Options::='--force-confold'"
 elif command -v dnf > /dev/null; then
     PKG_MANAGER="dnf"
     CLEAN_CMD="dnf autoremove -y && dnf clean all"
-    PKG_UPDATE_CMD="dnf update -y"
+    PKG_UPDATE_CMD="timeout 120 dnf -y update"
     INSTALL_CMD="dnf install -y"
     PURGE_CMD="dnf remove -y"
 elif command -v apk > /dev/null; then
@@ -44,22 +44,33 @@ fi
 # 删除未使用的旧内核（APT/DNF）
 echo "正在删除未使用的旧内核..."
 if [[ "$PKG_MANAGER" == "apt" || "$PKG_MANAGER" == "dnf" ]]; then
-    current_kernel=$(uname -r)
     if [[ "$PKG_MANAGER" == "apt" ]]; then
-        kernel_packages=$(dpkg --list | grep -E '^ii  linux-(image|headers)-[0-9]+' \
-            | awk '{print $2}' \
-            | grep -v "^linux-image-cloud-amd64$" \
-            | grep -v "^$current_kernel$")
-    else
-        kernel_packages=$(rpm -q kernel | grep -v "$current_kernel")
-    fi
+        if command -v purge-old-kernels > /dev/null; then
+            # 使用 purge-old-kernels，更安全
+            purge-old-kernels -y
+        else
+            current_kernel=$(uname -r | cut -d'-' -f1,2)
+            kernel_packages=$(dpkg -l | awk '/linux-image-[0-9]/{print $2}' \
+                | grep -v "$current_kernel" | grep -v "linux-image-cloud-amd64")
 
-    if [[ -n "$kernel_packages" ]]; then
-        echo "找到旧内核，正在删除：$kernel_packages"
-        $PURGE_CMD $kernel_packages > /dev/null 2>&1
-        [[ "$PKG_MANAGER" == "apt" ]] && update-grub > /dev/null 2>&1
+            if [[ -n "$kernel_packages" ]]; then
+                echo "找到旧内核，正在删除：$kernel_packages"
+                $PURGE_CMD $kernel_packages > /dev/null 2>&1
+            else
+                echo "未发现可删除的旧内核。"
+            fi
+        fi
+        echo "正在更新 grub..."
+        update-grub > /dev/null 2>&1
     else
-        echo "未发现可删除的旧内核。"
+        current_kernel=$(uname -r)
+        kernel_packages=$(rpm -q kernel | grep -v "$current_kernel")
+        if [[ -n "$kernel_packages" ]]; then
+            echo "找到旧内核，正在删除：$kernel_packages"
+            $PURGE_CMD $kernel_packages > /dev/null 2>&1
+        else
+            echo "未发现可删除的旧内核。"
+        fi
     fi
 fi
 
