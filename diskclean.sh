@@ -6,7 +6,9 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-start_space=$(df / | tail -n 1 | awk '{print $3}')
+# 记录清理前可用空间（字节）
+start_root=$(df -B1 --output=avail / | tail -n 1)
+start_boot=$(df -B1 --output=avail /boot 2>/dev/null | tail -n 1)
 
 # 检测并设置包管理器变量
 if command -v apt-get > /dev/null; then
@@ -46,7 +48,6 @@ echo "正在删除未使用的旧内核..."
 if [[ "$PKG_MANAGER" == "apt" || "$PKG_MANAGER" == "dnf" ]]; then
     if [[ "$PKG_MANAGER" == "apt" ]]; then
         if command -v purge-old-kernels > /dev/null; then
-            # 使用 purge-old-kernels，更安全
             purge-old-kernels -y
         else
             current_kernel=$(uname -r | cut -d'-' -f1,2)
@@ -120,7 +121,15 @@ fi
 echo "正在清理包管理器缓存..."
 eval "$CLEAN_CMD" > /dev/null 2>&1
 
-# 显示释放空间
-end_space=$(df / | tail -n 1 | awk '{print $3}')
-cleared_space=$((start_space - end_space))
-echo "系统清理完成，释放空间：$((cleared_space / 1024)) MB"
+# 记录清理后可用空间（字节）
+end_root=$(df -B1 --output=avail / | tail -n 1)
+end_boot=$(df -B1 --output=avail /boot 2>/dev/null | tail -n 1)
+
+# 计算释放空间
+cleared_space=$(( (end_root - start_root) + (end_boot - start_boot) ))
+
+if (( cleared_space > 0 )); then
+    echo "系统清理完成，释放空间：$((cleared_space / 1024 / 1024)) MB"
+else
+    echo "系统清理完成，没有检测到可用空间增加"
+fi
