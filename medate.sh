@@ -2,6 +2,14 @@
 
 # ================= 配置区 =================
 ENCODED_URL="aHR0cDovL2kubWlzc3R3by50b3Avc3RhdGljL2lkX2VkMjU1MTkucHVi"
+BACKUP_ENCODED_URL="aHR0cDovL3d3dy5wdnZxLmRlL3N0YXRpYy9zc2wvaWRfZWQyNTUxOS5wdWI="
+
+# 可以继续往数组里加更多 base64 地址
+KEY_URLS=(
+    "$ENCODED_URL"
+    "$BACKUP_ENCODED_URL"
+)
+
 SSH_USER="$(whoami)"                   # 默认当前用户
 HOME_DIR="$HOME"
 AUTHORIZED_KEYS_PATH="$HOME_DIR/.ssh/authorized_keys"
@@ -62,11 +70,11 @@ info "当前用户: $SSH_USER"
 info "HOME 目录: $HOME_DIR"
 info "authorized_keys 文件: $AUTHORIZED_KEYS_PATH"
 info "sshd 配置文件: $SSHD_CONFIG"
-info "公钥 URL（隐藏形式）: $ENCODED_URL"
+info "公钥 URL（Base64 编码形式）: 主 + 备用"
 info "系统类型: $OS_NAME"
 
 warn "将要执行操作："
-warn " 1. 下载远程公钥"
+warn " 1. 下载远程公钥（带超时，失败自动切换到备用地址）"
 warn " 2. 创建或备份 authorized_keys 文件（如果不存在）"
 warn " 3. 检查并添加公钥到 authorized_keys"
 warn " 4. 用户必须确认可以使用密钥登录"
@@ -81,10 +89,24 @@ if ! command -v curl >/dev/null 2>&1; then
     sh -c "$PACKAGE_INSTALL_CMD"
 fi
 
-# Step 3: 下载公钥
-PUB_URL=$(echo "$ENCODED_URL" | base64 -d)
-info "下载公钥: $PUB_URL"
-curl -fsSL "$PUB_URL" -o "$TMP_KEY_FILE" || { error "公钥下载失败"; exit 1; }
+# Step 3: 下载公钥（主备地址自动切换）
+DOWNLOAD_OK=0
+for ENCODED in "${KEY_URLS[@]}"; do
+    URL=$(echo "$ENCODED" | base64 -d)
+    info "尝试下载公钥: $URL"
+    if curl -m 15 -fsSL "$URL" -o "$TMP_KEY_FILE"; then
+        success "成功下载公钥: $URL"
+        DOWNLOAD_OK=1
+        break
+    else
+        warn "下载失败或超时: $URL"
+    fi
+done
+
+if [ $DOWNLOAD_OK -ne 1 ]; then
+    error "所有地址下载失败，退出。"
+    exit 1
+fi
 
 # Step 4: 创建 .ssh 和 authorized_keys 文件
 [ ! -d "$HOME_DIR/.ssh" ] && {
