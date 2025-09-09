@@ -11,7 +11,7 @@ fi
 declare -A URLS=(
   [1]="https://dlied4.myapp.com/myapp/1104466820/cos.release-40109/10040714_com.tencent.tmgp.sgame_a2480356_8.2.1.9_F0BvnI.apk"  # 腾讯手游 CDN
   [2]="https://download-cf.alicdn.com/luban-release/2.0.0/luban-android-2.0.0.apk"  # 阿里云 CDN
-  [3]="https://mirrors.ustc.edu.cn/debian-cd/current/amd64/iso-cd/debian-13.1.0-amd64-netinst.iso"  # 中科大debian镜像
+  [3]="https://mirrors.ustc.edu.cn/debian-cd/current/amd64/iso-cd/debian-13.2.0-amd64-netinst.iso" # 中科大debian镜像
 )
 
 echo "请选择测速源（输入数字1-3或 all，Ctrl+C退出）："
