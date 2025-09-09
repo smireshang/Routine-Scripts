@@ -11,20 +11,18 @@ fi
 declare -A URLS=(
   [1]="https://dlied4.myapp.com/myapp/1104466820/cos.release-40109/10040714_com.tencent.tmgp.sgame_a2480356_8.2.1.9_F0BvnI.apk"  # 腾讯手游 CDN
   [2]="https://download-cf.alicdn.com/luban-release/2.0.0/luban-android-2.0.0.apk"  # 阿里云 CDN
-  [3]="https://mirrors.huaweicloud.com/repository/toolkit/dapr/dapr-linux-amd64.tar.gz"  # 华为云 CDN
-  [4]="https://d1.bdstatic.com/mda-jh2n46ggmp98pv60/mda-jh2n46ggmp98pv60.apk"  # 百度公开文件
+  [3]="https://mirrors.ustc.edu.cn/debian-cd/current/amd64/iso-cd/debian-13.1.0-amd64-netinst.iso"  # 中科大debian镜像
 )
 
-echo "请选择测速源（输入数字1-4或 all，Ctrl+C退出）："
+echo "请选择测速源（输入数字1-3或 all，Ctrl+C退出）："
 echo " 1) 腾讯手游 CDN"
 echo " 2) 阿里云 CDN"
-echo " 3) 华为云 CDN"
-echo " 4) 百度公开文件"
+echo " 3) debian镜像"
 echo " all) 测试全部"
 
 while true; do
   read -p "请输入选择： " choice
-  if [[ "$choice" =~ ^[1-4]$ ]]; then
+  if [[ "$choice" =~ ^[1-3]$ ]]; then
     SELECTED_URLS=("${URLS[$choice]}")
     echo "[选择确认] 只测速：$choice"
     break
@@ -33,7 +31,7 @@ while true; do
     echo "[选择确认] 测试全部测速源"
     break
   else
-    echo "[错误] 请输入数字1-4或 all"
+    echo "[错误] 请输入数字1-3或 all"
   fi
 done
 
