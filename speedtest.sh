@@ -48,17 +48,34 @@ done
 
 echo "开始测速，共循环 $count 轮，每轮测试 ${#SELECTED_URLS[@]} 个测速源..."
 
+# 循环测速
 for ((i=1; i<=count; i++)); do
   echo "==========================="
   echo "[第 $i 轮] 开始测速"
 
   for url in "${SELECTED_URLS[@]}"; do
     echo "[下载测速] $url"
-    curl -L --progress-bar -o /dev/null "$url"
+
+    # 下载前 300MB，只测速，不保存
+    speed=$(curl -L --progress-bar --range 0-314572799 -o /dev/null -w "%{speed_download}" "$url")
+    speed_mbps=$(awk "BEGIN {printf \"%.2f\", $speed/1024/1024}")  # 转 MB/s
+
+    echo "[本次速度] $speed_mbps MB/s"
+
+    # 保存速度用于平均计算
+    SPEED_LIST+=($speed_mbps)
   done
 
   echo "[第 $i 轮] 测速完成"
 done
 
+# 计算平均速度
+total=0
+for s in "${SPEED_LIST[@]}"; do
+  total=$(awk "BEGIN {printf \"%.2f\", $total+$s}")
+done
+
+average=$(awk "BEGIN {printf \"%.2f\", $total/${#SPEED_LIST[@]}}")
 echo "==========================="
-echo "所有测速完成！共执行 $count 轮。感谢使用！"
+echo "所有测速完成！共执行 $count 轮。"
+echo "测速源总数：${#SELECTED_URLS[@]}，平均速度：$average MB/s"
