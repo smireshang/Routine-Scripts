@@ -1,17 +1,34 @@
 #!/bin/bash
-
-# VPS 硬盘空间维护脚本
 set -e
 
 # 定义颜色
 green='\033[0;32m'
 yellow='\033[1;33m'
+red='\033[0;31m'
 cyan='\033[1;36m'
 plain='\033[0m'
 
 echo -e "${cyan}================ Debian系VPS硬盘自动维护 =================${plain}"
 
-# 判断是否安装过 XrayR，若存在则卸载 unzip（临时依赖）
+# 检查并安装依赖
+check_and_install() {
+    local pkg="$1"
+    local bin="$2"
+
+    if ! command -v "$bin" >/dev/null 2>&1; then
+        echo -e "${yellow}[依赖检测] 未找到 $pkg，正在安装...${plain}"
+        apt-get update -y >/dev/null 2>&1
+        apt-get install -y "$pkg"
+    else
+        echo -e "${green}[依赖检测] $pkg 已存在${plain}"
+    fi
+}
+
+# 必要组件检测
+check_and_install bc bc
+check_and_install cron crontab
+
+# 检测 XrayR 并卸载 unzip（临时依赖）
 if [ -d "/etc/XrayR" ] || [ -f "/usr/local/XrayR/XrayR" ]; then
     echo -e "${yellow}[临时依赖清理] 检测到 XrayR，正在卸载 unzip ...${plain}"
     apt purge -y unzip || true
@@ -21,11 +38,7 @@ else
     echo -e "${yellow}[临时依赖清理] 未检测到 XrayR，跳过 unzip 卸载${plain}"
 fi
 
-# 依赖检测
-echo -e "${yellow}[依赖检测] 安装必要组件...${plain}"
-apt install bc -y || true
-
-# 判断是否容器环境
+# 环境检测
 virt_env="normal"
 if command -v systemd-detect-virt >/dev/null; then
     if systemd-detect-virt --container >/dev/null 2>&1; then
@@ -43,7 +56,7 @@ else
 fi
 
 # 精确统计清理前可释放空间
-cleared_size=$(du -sk $targets 2>/dev/null | awk '{sum+=$1} END {print sum}')
+cleared_size=$(du -sk $targets 2>/dev/null | awk '{sum+=$1} END {print sum+0}')
 cleared_mb=$(echo "scale=2; $cleared_size/1024" | bc)
 
 echo ""
@@ -78,7 +91,7 @@ targets="/usr/share/doc /usr/share/man /usr/share/info /usr/share/lintian /usr/s
 if command -v systemd-detect-virt >/dev/null && systemd-detect-virt --container >/dev/null 2>&1; then
     targets="\$targets /lib/modules"
 fi
-cleared_size=\$(du -sk \$targets 2>/dev/null | awk '{sum+=\$1} END {print sum}')
+cleared_size=\$(du -sk \$targets 2>/dev/null | awk '{sum+=\$1} END {print sum+0}')
 cleared_mb=\$(echo "scale=2; \$cleared_size/1024" | bc)
 apt clean
 rm -rf /var/lib/apt/lists/*
@@ -92,11 +105,12 @@ EOF
 chmod +x /usr/local/bin/vps-lite-daily-clean.sh
 
 # 安装定时任务（避免重复添加）
-if ! crontab -l 2>/dev/null | grep -q "vps-lite-daily-clean.sh"; then
+if crontab -l 2>/dev/null | grep -q "vps-lite-daily-clean.sh"; then
+    echo -e "${green}定时任务已存在，跳过添加${plain}"
+else
     (crontab -l 2>/dev/null; echo "0 3 * * * /usr/local/bin/vps-lite-daily-clean.sh >/dev/null 2>&1") | crontab -
+    echo -e "${green}✅ 自动定时任务配置完成 (每天凌晨3点自动清理)${plain}"
 fi
 
-echo ""
-echo -e "${green}✅ 自动定时任务配置完成 (每天凌晨3点自动清理)${plain}"
 echo -e "${yellow}[日志位置]${plain} $log_file"
 echo -e "${cyan}================ 部署完成 =================${plain}"
