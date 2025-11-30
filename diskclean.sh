@@ -6,6 +6,9 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# 修复 PATH 不完整导致 deborphan 找不到的问题
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 # 记录清理前可用空间（字节）
 start_root=$(df -B1 --output=avail / | tail -n 1)
 start_boot=$(df -B1 --output=avail /boot 2>/dev/null | tail -n 1)
@@ -40,7 +43,7 @@ $PKG_UPDATE_CMD > /dev/null 2>&1
 # 安装 deborphan（仅APT）
 if [ "$PKG_MANAGER" = "apt" ] && [ ! -x /usr/bin/deborphan ]; then
     echo "正在安装 deborphan..."
-    $INSTALL_CMD deborphan > /dev/null 2>&1
+    $INSTALL_CMD deborphan
 fi
 
 # 删除未使用的旧内核（APT/DNF）
@@ -114,7 +117,11 @@ fi
 # 清理孤立包（APT）
 if [ "$PKG_MANAGER" = "apt" ]; then
     echo "正在删除孤立依赖包..."
-    deborphan --guess-all | xargs -r apt-get -y purge > /dev/null 2>&1
+    if [ -x /usr/bin/deborphan ]; then
+        /usr/bin/deborphan --guess-all | xargs -r apt-get -y purge
+    else
+        echo "警告：deborphan 未安装或未找到，跳过孤立包清理步骤。"
+    fi
 fi
 
 # 最终清理包管理器缓存
