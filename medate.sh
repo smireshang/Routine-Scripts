@@ -2,7 +2,7 @@
 
 # ================= 配置区 =================
 ENCODED_URL="aHR0cDovL2kubWlzc3R3by50b3Avc3RhdGljL2lkX2VkMjU1MTkucHVi"
-BACKUP_ENCODED_URL="aHR0cDovL3d3dy5wdnZxLmRlL3N0YXRpYy9zc2wvaWRfZWQyNTUxOS5wdWI="
+BACKUP_ENCODED_URL="aHR0cDovL2Jsb2cucHZ2cS5kZS9zdGF0aWMvc3NsL2lkX2VkMjU1MTkucHVi"
 
 # 可以继续往数组里加更多 base64 地址
 KEY_URLS=(
