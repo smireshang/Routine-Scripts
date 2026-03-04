@@ -9,20 +9,22 @@ if ! command -v curl >/dev/null 2>&1; then
 fi
 
 declare -A URLS=(
-  [1]="https://dlied4.myapp.com/myapp/1104466820/cos.release-40109/10040714_com.tencent.tmgp.sgame_a2480356_8.2.1.9_F0BvnI.apk"  # 腾讯手游 CDN
-  [2]="https://autopatchcn.yuanshen.com/client_app/download/Android/20250718182628_nnOpvKMewCwYMAFU/ydbackup318/yuanshen_5.8.0.apk"  # 米哈游 CDN
-  [3]="https://u5.gdl.netease.com/party_netease_103_1.0.215_a94d99.apk?key1=7f4f47929952de2d974597f588dd23c6&key2=68c0e4fd" # 网易手游 CDN
+  [1]="https://store.storevideos.cdn-apple.com/v1/store.apple.com/st/1666383693478/atvloop-video-202210/streams_atvloop-video-202210/1920x1080/fileSequence3.m4s"  # 苹果静态资源
+  [2]="https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk"  # 百度 CDN
+  [3]="https://wwwstatic.vivo.com.cn/vivoportal/files/resource/funtouch/1651200648928/images/os2-jude-video.mp4" # vivo静态资源
+  [4]="https://desk.ctyun.cn/desktop/software/clientsoftware/download/ff3e71dcc21152307f54700c62e5aef6"  # 天翼云
 )
 
 echo "请选择测速源（输入数字1-3或 all，Ctrl+C退出）："
-echo " 1) 腾讯手游 CDN"
-echo " 2) 米哈游 CDN"
-echo " 3) 网易手游 CDN"
+echo " 1) 苹果静态资源"
+echo " 2) 百度 CDN"
+echo " 3) vivo静态资源"
+echo " 4) 天翼云"
 echo " all) 测试全部"
 
 while true; do
   read -p "请输入选择： " choice
-  if [[ "$choice" =~ ^[1-3]$ ]]; then
+  if [[ "$choice" =~ ^[1-4]$ ]]; then
     SELECTED_URLS=("${URLS[$choice]}")
     echo "[选择确认] 只测速：$choice"
     break
